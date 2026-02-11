@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "projectId": "e7ae5886-ba1b-4be0-af80-ca2bcb2f5a6c",
+  "projectName": "CSAIv2",
+  "createdAt": "2026-02-11T00:27:10.479Z",
+  "updatedAt": "2026-02-11T00:27:10.496Z",
+  "license": {
+    "userId": "",
+    "tier": "basic",
+    "validUntil": ""
+  },
+  "currentPhase": 1,
+  "phases": {},
+  "artifacts": {},
+  "metrics": {
+    "totalTokensUsed": 0,
+    "estimatedCost": 0,
+    "sessionsCount": 0
+  },
+  "lastOpenedAt": "2026-02-11T00:27:10.479Z",
+  "completedPhases": [],
+  "currentTool": null,
+  "completedTools": [],
+  "productType": "system"
+}

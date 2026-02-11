@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "gambit-ai-gen-knowledge"
+  ],
+  "enableAllProjectMcpServers": true
+}

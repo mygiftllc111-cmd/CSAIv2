@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "gambit-ai-gen-knowledge": {
+      "command": "npx",
+      "args": ["-y", "-p", "gambit-ai-gen-v2@latest", "gambit-mcp-api"],
+      "description": "Gambit AI Gen ナレッジサーバー（API版）- Phase/Tool実行に必要"
+    }
+  }
+}
