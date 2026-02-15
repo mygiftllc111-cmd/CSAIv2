@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-001: チャット画面モックアップ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-light: #81C784;
+            --primary-dark: #388E3C;
+            --secondary: #8D6E63;
+            --secondary-light: #A1887F;
+            --bg-default: #F5F0EB;
+            --bg-paper: #FFFFFF;
+            --text-primary: #3E2723;
+            --text-secondary: #5D4037;
+            --divider: rgba(62, 39, 35, 0.12);
+            --success: #66BB6A;
+            --warning: #FFA726;
+            --error: #EF5350;
+            --info: #42A5F5;
+            --drawer-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Noto Sans JP", "Roboto", sans-serif;
+            background-color: var(--bg-default);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* ===== ヘッダー ===== */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: var(--bg-paper);
+            box-shadow: 0 1px 3px rgba(62, 39, 35, 0.08);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            z-index: 1200;
+        }
+        .header-menu-btn {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 50%;
+            font-size: 24px;
+            color: var(--text-secondary);
+        }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary-dark);
+        }
+        .header-logo svg { width: 28px; height: 28px; fill: var(--primary); }
+        .header-spacer { flex: 1; }
+        .header-user {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-right: 12px;
+        }
+        .header-logout {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8125rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+        .header-logout:hover { background: rgba(0,0,0,0.04); }
+
+        /* ===== サイドバー ===== */
+        .sidebar {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: var(--drawer-width);
+            height: calc(100vh - 64px);
+            background: var(--bg-paper);
+            box-shadow: 1px 0 3px rgba(62, 39, 35, 0.06);
+            display: flex;
+            flex-direction: column;
+            z-index: 1100;
+        }
+        .sidebar-section-label {
+            padding: 12px 16px 4px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .sidebar-divider {
+            border: none;
+            border-top: 1px solid var(--divider);
+            margin: 4px 0;
+        }
+        .sidebar-nav { list-style: none; padding: 4px 8px; flex: 1; }
+        .sidebar-nav li { margin-bottom: 4px; }
+        .sidebar-nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            text-align: left;
+        }
+        .sidebar-nav-btn:hover { background: rgba(0,0,0,0.04); }
+        .sidebar-nav-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        .sidebar-nav-btn svg { width: 20px; height: 20px; }
+        .sidebar-nav-btn.active svg { fill: white; }
+
+        /* 会話履歴リスト（サイドバー内） */
+        .sidebar-conversations {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 8px;
+        }
+        .sidebar-conv-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            font-family: inherit;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-conv-item:hover { background: rgba(0,0,0,0.04); }
+        .sidebar-conv-item.active {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--primary-dark);
+        }
+        .sidebar-conv-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.6; }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--divider);
+        }
+        .sidebar-footer-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(76, 175, 80, 0.08);
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+        .sidebar-footer-card svg { width: 18px; height: 18px; fill: var(--primary); }
+
+        /* ===== メインコンテンツ ===== */
+        .main {
+            margin-left: var(--drawer-width);
+            margin-top: 64px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 64px);
+        }
+
+        /* ===== チャットエリア ===== */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        /* 空状態 */
+        .chat-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            opacity: 0.6;
+        }
+        .chat-empty svg { width: 64px; height: 64px; fill: var(--primary-light); margin-bottom: 16px; }
+        .chat-empty h3 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .chat-empty p {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+        .chat-empty-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px;
+            max-width: 500px;
+            justify-content: center;
+        }
+        .suggestion-chip {
+            padding: 8px 16px;
+            background: var(--bg-paper);
+            border: 1px solid var(--divider);
+            border-radius: 20px;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .suggestion-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        /* メッセージ */
+        .msg-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .msg-row.user { flex-direction: row-reverse; }
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .msg-avatar.user-avatar { background: var(--primary-light); }
+        .msg-avatar.ai-avatar { background: var(--secondary-light); }
+        .msg-avatar svg { width: 20px; height: 20px; fill: white; }
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 70%;
+            white-space: pre-wrap;
+            font-size: 0.9375rem;
+            line-height: 1.7;
+        }
+        .msg-bubble.user-bubble {
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-bubble.ai-bubble {
+            background: var(--bg-paper);
+            border: 1px solid var(--divider);
+            border-bottom-left-radius: 4px;
+        }
+        .msg-timestamp {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+        .msg-row.user .msg-timestamp { text-align: right; }
+
+        /* 参照ソース表示 */
+        .msg-sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .source-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            background: rgba(76, 175, 80, 0.08);
+            border-radius: 12px;
+            font-size: 0.6875rem;
+            color: var(--primary-dark);
+        }
+        .source-tag svg { width: 12px; height: 12px; fill: var(--primary); }
+
+        /* タイピングインジケーター */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            opacity: 0.4;
+            animation: typing 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.4; transform: scale(1); }
+            30% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* ===== 入力エリア ===== */
+        .input-area {
+            padding: 12px 24px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .input-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-paper);
+            border-radius: 16px;
+            border: 1px solid var(--divider);
+            box-shadow: 0 1px 4px rgba(62, 39, 35, 0.06);
+        }
+        .input-container:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+        }
+        .input-text {
+            flex: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            line-height: 1.5;
+            min-height: 24px;
+            max-height: 120px;
+            padding: 4px 8px;
+            color: var(--text-primary);
+            background: transparent;
+        }
+        .input-text::placeholder { color: rgba(93, 64, 55, 0.5); }
+
+        .input-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .input-btn:hover { background: rgba(0,0,0,0.04); }
+        .input-btn svg { width: 22px; height: 22px; }
+        .mic-btn svg { fill: var(--text-secondary); }
+        .mic-btn.recording {
+            background: rgba(239, 83, 80, 0.1);
+            animation: pulse-mic 1.5s infinite;
+        }
+        .mic-btn.recording svg { fill: var(--error); }
+        @keyframes pulse-mic {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.3); }
+            50% { box-shadow: 0 0 0 8px rgba(239, 83, 80, 0); }
+        }
+        .send-btn svg { fill: var(--primary); }
+        .send-btn:disabled svg { fill: rgba(93, 64, 55, 0.3); }
+        .send-btn:disabled { cursor: default; }
+
+        .input-hint {
+            text-align: center;
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            opacity: 0.5;
+            margin-top: 6px;
+        }
+
+        /* ===== 音声入力オーバーレイ ===== */
+        .voice-overlay {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-paper);
+            border-radius: 20px;
+            padding: 16px 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            z-index: 1300;
+            text-align: center;
+            min-width: 280px;
+        }
+        .voice-overlay.active { display: block; }
+        .voice-text {
+            font-size: 0.9375rem;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            min-height: 24px;
+        }
+        .voice-status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .voice-waveform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            height: 32px;
+            margin: 8px 0;
+        }
+        .wave-bar {
+            width: 3px;
+            background: var(--primary);
+            border-radius: 3px;
+            animation: wave 0.8s infinite ease-in-out;
+        }
+        .wave-bar:nth-child(1) { height: 12px; animation-delay: 0s; }
+        .wave-bar:nth-child(2) { height: 20px; animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { height: 28px; animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { height: 20px; animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { height: 12px; animation-delay: 0.4s; }
+        @keyframes wave {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.4); }
+        }
+
+        /* ===== レスポンシブ ===== */
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .header-menu-btn { display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+            .header-user { display: none; }
+            .input-area { padding: 8px 12px 16px; }
+            .chat-area { padding: 16px; }
+            .msg-bubble { max-width: 85%; }
+        }
+
+        /* ===== 申請フォーム ===== */
+        .form-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 64px);
+            padding: 24px;
+        }
+        .form-card {
+            background: var(--bg-paper);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 2px 12px rgba(62, 39, 35, 0.08);
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .form-header svg { width: 48px; height: 48px; fill: var(--primary); margin-bottom: 8px; }
+        .form-header h2 {
+            font-size: 1.25rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .form-header p {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--divider);
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            color: var(--text-primary);
+            outline: none;
+        }
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+        }
+        .form-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .form-submit:hover { background: var(--primary-dark); }
+        .form-submit svg { width: 18px; height: 18px; fill: white; }
+
+        /* 承認待ち画面 */
+        .pending-card {
+            text-align: center;
+        }
+        .pending-card h2 {
+            font-size: 1.25rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin: 12px 0;
+        }
+        .pending-card p {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .pending-alert {
+            background: rgba(66, 165, 245, 0.08);
+            border-left: 3px solid var(--info);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            text-align: left;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .pending-status-check {
+            margin-top: 16px;
+        }
+        .pending-status-btn {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary-dark);
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .pending-status-btn:hover { background: rgba(76, 175, 80, 0.05); }
+
+        /* ===== タブ切り替え制御 ===== */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* デモ用タブ */
+        .demo-tabs {
+            position: fixed;
+            bottom: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            z-index: 9999;
+            background: rgba(0,0,0,0.8);
+            padding: 6px;
+            border-radius: 8px;
+        }
+        .demo-tab {
+            padding: 4px 10px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 0.6875rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .demo-tab.active { background: var(--primary); }
+    </style>
+</head>
+<body>
+
+<!-- ===== ヘッダー ===== -->
+<div class="header">
+    <button class="header-menu-btn">&#9776;</button>
+    <div class="header-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        Hospitality AI
+    </div>
+    <div class="header-spacer"></div>
+    <span class="header-user" id="headerUser">テスト太郎さん</span>
+    <button class="header-logout">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        ログアウト
+    </button>
+</div>
+
+<!-- ===== View 1: 利用申請フォーム ===== -->
+<div id="view-form" class="view active">
+    <div style="margin-top: 64px;">
+        <div class="form-container">
+            <div class="form-card">
+                <div class="form-header">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <h2>Hospitality AI</h2>
+                    <p>安心して何でも質問できるAIアシスタントです。<br>まずは利用申請をお願いします。</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">お名前 *</label>
+                    <input class="form-input" type="text" placeholder="例: 田中太郎" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所属部署 *</label>
+                    <input class="form-input" type="text" placeholder="例: 研修チーム" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">入社時期 *</label>
+                    <input class="form-input" type="month" value="2026-02">
+                </div>
+                <button class="form-submit">
+                    利用申請を送信
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== View 2: 承認待ち ===== -->
+<div id="view-pending" class="view">
+    <div style="margin-top: 64px;">
+        <div class="form-container">
+            <div class="form-card pending-card">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="#4CAF50"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <h2>申請を受け付けました</h2>
+                <p>テスト太郎さん、ありがとうございます。<br>管理者が確認後、ご利用いただけるようになります。</p>
+                <div class="pending-alert">
+                    承認されるまでしばらくお待ちください。<br>
+                    承認後、このページから直接チャットをご利用いただけます。
+                </div>
+                <div class="pending-status-check">
+                    <button class="pending-status-btn">承認状況を確認する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== View 3: チャット画面（メイン） ===== -->
+<div id="view-chat" class="view">
+    <!-- サイドバー -->
+    <div class="sidebar">
+        <div class="sidebar-section-label">メニュー</div>
+        <hr class="sidebar-divider">
+        <ul class="sidebar-nav">
+            <li>
+                <button class="sidebar-nav-btn active">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    新しい会話
+                </button>
+            </li>
+            <li>
+                <button class="sidebar-nav-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    対話履歴
+                </button>
+            </li>
+        </ul>
+        <hr class="sidebar-divider">
+        <div class="sidebar-section-label">最近の会話</div>
+        <div class="sidebar-conversations">
+            <button class="sidebar-conv-item active">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                有給休暇の申請方法について
+            </button>
+            <button class="sidebar-conv-item">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                社内ポータルの使い方
+            </button>
+            <button class="sidebar-conv-item">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                研修スケジュールの確認
+            </button>
+        </div>
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-card">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                安心して質問してください
+            </div>
+        </div>
+    </div>
+
+    <!-- チャットメイン -->
+    <div class="main">
+        <!-- 空状態 -->
+        <div class="chat-area" id="chatEmpty" style="display: none;">
+            <div class="chat-empty">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <h3>何でも気軽に質問してください</h3>
+                <p>社内のことなら何でもお答えします</p>
+                <div class="chat-empty-suggestions">
+                    <button class="suggestion-chip">有給休暇の取り方</button>
+                    <button class="suggestion-chip">経費精算の方法</button>
+                    <button class="suggestion-chip">研修スケジュール</button>
+                    <button class="suggestion-chip">社内ツールの使い方</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- メッセージ表示 -->
+        <div class="chat-area" id="chatMessages">
+            <!-- ユーザーメッセージ -->
+            <div class="msg-row user">
+                <div class="msg-avatar user-avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
+                <div>
+                    <div class="msg-bubble user-bubble">有給休暇の申請方法を教えてください</div>
+                    <div class="msg-timestamp">14:23</div>
+                </div>
+            </div>
+
+            <!-- AIメッセージ -->
+            <div class="msg-row">
+                <div class="msg-avatar ai-avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div>
+                    <div class="msg-bubble ai-bubble">お疲れさまです。有給休暇の申請方法について確認しますね。
+
+社内マニュアルによると、有給休暇の申請は以下の流れになります：
+
+1. 社内ポータルにログイン
+2. 「各種申請」メニューから「有給休暇申請」を選択
+3. 希望日・理由を入力して申請
+4. 直属の上長が承認
+
+申請は利用日の3営業日前までに行うのが望ましいとされています。
+
+他にご不明な点があれば、お気軽にお聞きください。</div>
+                    <div class="msg-sources">
+                        <span class="source-tag">
+                            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zM13 9V3.5L18.5 9H13z"/></svg>
+                            社内マニュアル - 休暇申請
+                        </span>
+                        <span class="source-tag">
+                            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zM13 9V3.5L18.5 9H13z"/></svg>
+                            就業規則 第5章
+                        </span>
+                    </div>
+                    <div class="msg-timestamp">14:23</div>
+                </div>
+            </div>
+
+            <!-- ユーザーの追加質問 -->
+            <div class="msg-row user">
+                <div class="msg-avatar user-avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
+                <div>
+                    <div class="msg-bubble user-bubble">半日休暇も取れますか？</div>
+                    <div class="msg-timestamp">14:25</div>
+                </div>
+            </div>
+
+            <!-- AIのタイピング中 -->
+            <div class="msg-row">
+                <div class="msg-avatar ai-avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div>
+                    <div class="msg-bubble ai-bubble">
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 入力エリア -->
+        <div class="input-area">
+            <div class="input-container">
+                <textarea class="input-text" rows="1" placeholder="質問を入力してください..."></textarea>
+                <button class="input-btn mic-btn" title="音声入力">
+                    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                </button>
+                <button class="input-btn send-btn" title="送信">
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+            <div class="input-hint">Enter で送信 / Shift + Enter で改行</div>
+        </div>
+
+        <!-- 音声入力オーバーレイ -->
+        <div class="voice-overlay" id="voiceOverlay">
+            <div class="voice-waveform">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+            <div class="voice-text">音声を聞いています...</div>
+            <div class="voice-status">マイクボタンを再度押すと停止します</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== View 4: 対話履歴ページ ===== -->
+<div id="view-history" class="view">
+    <div class="sidebar">
+        <div class="sidebar-section-label">メニュー</div>
+        <hr class="sidebar-divider">
+        <ul class="sidebar-nav">
+            <li>
+                <button class="sidebar-nav-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    新しい会話
+                </button>
+            </li>
+            <li>
+                <button class="sidebar-nav-btn active">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    対話履歴
+                </button>
+            </li>
+        </ul>
+        <hr class="sidebar-divider">
+        <div class="sidebar-section-label">最近の会話</div>
+        <div class="sidebar-conversations">
+            <button class="sidebar-conv-item">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                有給休暇の申請方法について
+            </button>
+            <button class="sidebar-conv-item">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                社内ポータルの使い方
+            </button>
+            <button class="sidebar-conv-item">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                研修スケジュールの確認
+            </button>
+        </div>
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-card">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                安心して質問してください
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div style="padding: 24px;">
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">対話履歴</h2>
+
+            <!-- 履歴カード -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="background: var(--bg-paper); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#4CAF50"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.9375rem;">有給休暇の申請方法について</div>
+                        <div style="font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px;">2026年2月14日 14:23 ・ 4件のメッセージ</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="rgba(93,64,55,0.3)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </div>
+
+                <div style="background: var(--bg-paper); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#4CAF50"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.9375rem;">社内ポータルの使い方</div>
+                        <div style="font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px;">2026年2月13日 10:15 ・ 6件のメッセージ</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="rgba(93,64,55,0.3)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </div>
+
+                <div style="background: var(--bg-paper); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#4CAF50"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.9375rem;">研修スケジュールの確認</div>
+                        <div style="font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px;">2026年2月12日 09:30 ・ 2件のメッセージ</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="rgba(93,64,55,0.3)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- デモ切り替えタブ -->
+<div class="demo-tabs">
+    <button class="demo-tab active" onclick="showView('form')">申請フォーム</button>
+    <button class="demo-tab" onclick="showView('pending')">承認待ち</button>
+    <button class="demo-tab" onclick="showView('chat')">チャット</button>
+    <button class="demo-tab" onclick="showView('history')">履歴</button>
+</div>
+
+<script>
+function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // ヘッダーの表示調整
+    const headerUser = document.getElementById('headerUser');
+    if (name === 'form' || name === 'pending') {
+        headerUser.style.display = 'none';
+    } else {
+        headerUser.style.display = '';
+    }
+}
+
+// 音声入力デモ
+const micBtn = document.querySelector('.mic-btn');
+const voiceOverlay = document.getElementById('voiceOverlay');
+let isRecording = false;
+
+if (micBtn) {
+    micBtn.addEventListener('click', () => {
+        isRecording = !isRecording;
+        micBtn.classList.toggle('recording', isRecording);
+        voiceOverlay.classList.toggle('active', isRecording);
+    });
+}
+</script>
+
+</body>
+</html>

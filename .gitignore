@@ -38,5 +38,19 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Backend dev database
+*.db
+
 # Supabase local
 .supabase/
+
+# Gambit
+.gambit/
+
+# Playwright / E2E
+tests/screenshots/*
+!tests/screenshots/.gitkeep
+tests/temp/*
+!tests/temp/.gitkeep
+test-results/
+playwright-report/

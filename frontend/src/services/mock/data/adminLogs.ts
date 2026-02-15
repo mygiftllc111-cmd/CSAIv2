@@ -1,0 +1,132 @@
+import type { ConversationLog } from '@/types/index.ts';
+
+export const MOCK_CONVERSATION_LOGS: ConversationLog[] = [
+  {
+    conversation_id: 'conv-001',
+    title: '有給休暇の申請方法について',
+    user_name: 'テスト太郎',
+    department: '研修チーム',
+    join_date: '2026-02',
+    created_at: '2026-02-14T09:00:00Z',
+    message_count: 4,
+    first_message: '有給休暇の申請方法を教えてください',
+  },
+  {
+    conversation_id: 'conv-002',
+    title: '社内ポータルの使い方',
+    user_name: 'テスト太郎',
+    department: '研修チーム',
+    join_date: '2026-02',
+    created_at: '2026-02-13T10:15:00Z',
+    message_count: 6,
+    first_message: '社内ポータルの使い方を教えてください',
+  },
+  {
+    conversation_id: 'conv-003',
+    title: '研修スケジュールの確認',
+    user_name: 'テスト太郎',
+    department: '研修チーム',
+    join_date: '2026-02',
+    created_at: '2026-02-12T09:30:00Z',
+    message_count: 2,
+    first_message: '研修スケジュールを確認したいのですが',
+  },
+  {
+    conversation_id: 'conv-004',
+    title: '経費精算の手順について',
+    user_name: '新人一郎',
+    department: 'カスタマーサポート',
+    join_date: '2026-01',
+    created_at: '2026-02-11T14:20:00Z',
+    message_count: 3,
+    first_message: '経費精算はどこからできますか？',
+  },
+  {
+    conversation_id: 'conv-005',
+    title: '社員証の受け取り',
+    user_name: '新人一郎',
+    department: 'カスタマーサポート',
+    join_date: '2026-01',
+    created_at: '2026-02-10T11:00:00Z',
+    message_count: 2,
+    first_message: '社員証はどこで受け取れますか？',
+  },
+  {
+    conversation_id: 'conv-006',
+    title: '勤怠システムのログイン方法',
+    user_name: '研修花子',
+    department: '営業部',
+    join_date: '2026-03',
+    created_at: '2026-02-14T15:30:00Z',
+    message_count: 4,
+    first_message: '勤怠システムにログインできません',
+  },
+  {
+    conversation_id: 'conv-007',
+    title: '社内ルールについて質問',
+    user_name: '研修花子',
+    department: '営業部',
+    join_date: '2026-03',
+    created_at: '2026-02-13T16:45:00Z',
+    message_count: 2,
+    first_message: '服装規定について教えてください',
+  },
+  {
+    conversation_id: 'conv-008',
+    title: '名刺の発注方法',
+    user_name: '入社三郎',
+    department: '研修チーム',
+    join_date: '2026-02',
+    created_at: '2026-02-12T13:10:00Z',
+    message_count: 3,
+    first_message: '名刺はどうやって発注すればいいですか？',
+  },
+];
+
+export const MOCK_LOG_DETAIL_MESSAGES = [
+  {
+    message_id: 'log-msg-001',
+    role: 'user' as const,
+    content: '経費精算はどこからできますか？',
+    input_method: 'text' as const,
+    created_at: '2026-02-11T14:20:00Z',
+  },
+  {
+    message_id: 'log-msg-002',
+    role: 'assistant' as const,
+    content: 'お疲れさまです。経費精算についてお調べしますね。\n\n社内ポータルの「各種申請」→「経費精算」から申請できます。領収書の写真をアップロードし、必要事項を入力して送信してください。\n\n初めての場合は、上長に事前確認しておくとスムーズですよ。',
+    input_method: 'text' as const,
+    created_at: '2026-02-11T14:20:08Z',
+  },
+  {
+    message_id: 'log-msg-003',
+    role: 'user' as const,
+    content: '領収書がない場合はどうすればいいですか？',
+    input_method: 'text' as const,
+    created_at: '2026-02-11T14:21:00Z',
+  },
+  {
+    message_id: 'log-msg-004',
+    role: 'assistant' as const,
+    content: 'なるほど、領収書がない場合ですね。\n\n一般的には、経費精算には領収書が必要ですが、やむを得ない場合は「支払証明書」を作成して上長の承認を得ることで対応できる場合があります。\n\n詳しくは経理チームに確認いただくのが確実です。内線番号は2345です。',
+    input_method: 'text' as const,
+    created_at: '2026-02-11T14:21:07Z',
+  },
+];
+
+export interface FrequentQuestion {
+  question: string;
+  count: number;
+  category: string;
+}
+
+export const MOCK_FREQUENT_QUESTIONS: FrequentQuestion[] = [
+  { question: '有給休暇の申請方法', count: 12, category: '休暇・勤怠' },
+  { question: '経費精算の手順', count: 8, category: '経費' },
+  { question: '社内ポータルの使い方', count: 7, category: 'システム' },
+  { question: '研修スケジュールの確認', count: 6, category: '研修' },
+  { question: '名刺の発注方法', count: 5, category: '総務' },
+  { question: '勤怠システムのログイン', count: 4, category: 'システム' },
+  { question: '社員証の受け取り', count: 3, category: '総務' },
+  { question: '服装規定について', count: 3, category: '社内ルール' },
+];
