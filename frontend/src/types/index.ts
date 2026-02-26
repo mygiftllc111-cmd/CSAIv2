@@ -127,6 +127,12 @@ export interface LogFilter {
   date_to?: string;
 }
 
+export interface FrequentQuestion {
+  question: string;
+  count: number;
+  category: string;
+}
+
 // --- 認証ストア ---
 
 export interface AuthState {

@@ -26,8 +26,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { adminService } from '@/services/index.ts';
-import type { ConversationLog, LogFilter, Message } from '@/types/index.ts';
-import type { FrequentQuestion } from '@/services/mock/data/adminLogs.ts';
+import type { ConversationLog, LogFilter, Message, FrequentQuestion } from '@/types/index.ts';
 
 const DEPARTMENTS = ['', '研修チーム', 'カスタマーサポート', '営業部'];
 const JOIN_DATES = ['', '2026-01', '2026-02', '2026-03'];

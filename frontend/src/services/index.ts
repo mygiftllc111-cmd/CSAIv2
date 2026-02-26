@@ -1,6 +1,15 @@
 // サービス統合エクスポート
-// モック → 実APIへの切り替えはここで行う
+// VITE_USE_MOCK=true でモックサービス、それ以外は実APIに接続
 
-export { mockAuthService as authService } from './mock/authService.ts';
-export { mockChatService as chatService } from './mock/chatService.ts';
-export { mockAdminService as adminService } from './mock/adminService.ts';
+import { mockAuthService } from './mock/authService.ts';
+import { mockChatService } from './mock/chatService.ts';
+import { mockAdminService } from './mock/adminService.ts';
+import { apiAuthService } from './api/authService.ts';
+import { apiChatService } from './api/chatService.ts';
+import { apiAdminService } from './api/adminService.ts';
+
+const useMock = import.meta.env.VITE_USE_MOCK === 'true';
+
+export const authService = useMock ? mockAuthService : apiAuthService;
+export const chatService = useMock ? mockChatService : apiChatService;
+export const adminService = useMock ? mockAdminService : apiAdminService;

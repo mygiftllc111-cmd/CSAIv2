@@ -5,13 +5,13 @@ import type {
   FewShotExample,
   KnowledgeSource,
   Message,
+  FrequentQuestion,
 } from '@/types/index.ts';
 import {
   MOCK_CONVERSATION_LOGS,
   MOCK_LOG_DETAIL_MESSAGES,
   MOCK_FREQUENT_QUESTIONS,
 } from './data/adminLogs.ts';
-import type { FrequentQuestion } from './data/adminLogs.ts';
 import { MOCK_PROMPT_CONFIG, MOCK_PROMPT_HISTORY } from './data/promptConfig.ts';
 import { MOCK_KNOWLEDGE_SOURCES } from './data/knowledgeSources.ts';
 

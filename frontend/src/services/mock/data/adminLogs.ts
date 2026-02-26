@@ -1,4 +1,4 @@
-import type { ConversationLog } from '@/types/index.ts';
+import type { ConversationLog, FrequentQuestion } from '@/types/index.ts';
 
 export const MOCK_CONVERSATION_LOGS: ConversationLog[] = [
   {
@@ -113,12 +113,6 @@ export const MOCK_LOG_DETAIL_MESSAGES = [
     created_at: '2026-02-11T14:21:07Z',
   },
 ];
-
-export interface FrequentQuestion {
-  question: string;
-  count: number;
-  category: string;
-}
 
 export const MOCK_FREQUENT_QUESTIONS: FrequentQuestion[] = [
   { question: '有給休暇の申請方法', count: 12, category: '休暇・勤怠' },
