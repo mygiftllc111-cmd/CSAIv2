@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
 from app.config import settings
-from app.database import get_db
+from app.database import get_db, async_session_factory
 from app.dependencies import get_admin_session
 from app.models.admin import AdminSession
 from app.models.knowledge import KnowledgeSource
@@ -78,17 +78,40 @@ async def update_source(
 @router.post("/admin/sync", response_model=KnowledgeSourceResponse)
 async def sync_knowledge(
     body: SyncRequest,
+    background_tasks: BackgroundTasks,
     session: AdminSession = Depends(get_admin_session),
     db: AsyncSession = Depends(get_db),
 ):
-    """手動再同期"""
-    source = await trigger_sync(db=db, source_id=body.source_id)
+    """手動再同期（バックグラウンド実行）"""
+    from sqlalchemy import select as _select
+    result = await db.execute(
+        _select(KnowledgeSource).where(KnowledgeSource.source_id == body.source_id)
+    )
+    source = result.scalars().first()
     if not source:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="ナレッジソースが見つかりません",
         )
-    return _format_source(source)
+
+    # Force-reset stuck syncing
+    if source.status == "syncing":
+        source.status = "active"
+        await db.commit()
+
+    # Mark as syncing immediately and return
+    source.status = "syncing"
+    await db.commit()
+    await db.refresh(source)
+    response = _format_source(source)
+
+    # Run actual sync in the background
+    async def _run_sync(source_id: str):
+        async with async_session_factory() as bg_db:
+            await trigger_sync(db=bg_db, source_id=source_id)
+
+    background_tasks.add_task(_run_sync, body.source_id)
+    return response
 
 
 @router.post("/admin/knowledge-sources/{source_id}/reset", response_model=KnowledgeSourceResponse)
