@@ -100,8 +100,10 @@ async def trigger_sync(
         return None
 
     if source.status == "syncing":
-        # Status stuck from a previous interrupted sync — reset and proceed
-        logger.warning(f"Resetting stuck 'syncing' status for source {source_id}")
+        # Force-reset stuck syncing status before proceeding
+        logger.warning(f"Force-resetting stuck 'syncing' status for source {source_id}")
+        source.status = "active"
+        await db.commit()
 
     # Mark as syncing
     source.status = "syncing"
@@ -201,6 +203,28 @@ async def trigger_sync(
         await db.commit()
         await db.refresh(source)
 
+    return source
+
+
+async def reset_sync_status(
+    db: AsyncSession,
+    source_id: str,
+) -> Optional[KnowledgeSource]:
+    """Force-reset a stuck 'syncing' status back to 'active'."""
+    result = await db.execute(
+        select(KnowledgeSource).where(KnowledgeSource.source_id == source_id)
+    )
+    source = result.scalars().first()
+    if not source:
+        return None
+
+    source.status = "active"
+    # Clear stored error if any
+    config = dict(source.connection_config or {})
+    config.pop("_last_error", None)
+    source.connection_config = config
+    await db.commit()
+    await db.refresh(source)
     return source
 
 

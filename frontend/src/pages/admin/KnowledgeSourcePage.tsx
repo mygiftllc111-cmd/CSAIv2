@@ -140,6 +140,17 @@ export const KnowledgeSourcePage = () => {
     }
   };
 
+  const handleReset = async (sourceId: string) => {
+    setError(null);
+    try {
+      const updated = await adminService.resetKnowledgeSource(sourceId);
+      setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
+      setSuccessMsg('ステータスをリセットしました。再同期を実行してください。');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'リセットに失敗しました');
+    }
+  };
+
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" py={4}>
@@ -233,15 +244,27 @@ export const KnowledgeSourcePage = () => {
                     size="small"
                   />
                 </Box>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={isSyncing ? <CircularProgress size={16} /> : <SyncIcon />}
-                  onClick={() => { void handleSync(source.source_id); }}
-                  disabled={isSyncing}
-                >
-                  {isSyncing ? '同期中...' : '手動再同期'}
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {source.status === 'syncing' && !isSyncing && (
+                    <Button
+                      variant="outlined"
+                      color="warning"
+                      size="small"
+                      onClick={() => { void handleReset(source.source_id); }}
+                    >
+                      同期リセット
+                    </Button>
+                  )}
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={isSyncing ? <CircularProgress size={16} /> : <SyncIcon />}
+                    onClick={() => { void handleSync(source.source_id); }}
+                    disabled={isSyncing || source.status === 'syncing'}
+                  >
+                    {isSyncing ? '同期中...' : '手動再同期'}
+                  </Button>
+                </Box>
               </Box>
 
               <Divider sx={{ mb: 2 }} />

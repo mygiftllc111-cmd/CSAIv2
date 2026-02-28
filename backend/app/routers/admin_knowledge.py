@@ -15,6 +15,7 @@ from app.services.knowledge_service import (
     update_knowledge_source,
     trigger_sync,
     upload_document,
+    reset_sync_status,
 )
 
 router = APIRouter()
@@ -81,7 +82,23 @@ async def sync_knowledge(
     if not source:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="ナレッジソースが見つからないか、既に同期中です",
+            detail="ナレッジソースが見つかりません",
+        )
+    return _format_source(source)
+
+
+@router.post("/admin/knowledge-sources/{source_id}/reset", response_model=KnowledgeSourceResponse)
+async def reset_knowledge_status(
+    source_id: str,
+    session: AdminSession = Depends(get_admin_session),
+    db: AsyncSession = Depends(get_db),
+):
+    """同期スタックリセット"""
+    source = await reset_sync_status(db=db, source_id=source_id)
+    if not source:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ナレッジソースが見つかりません",
         )
     return _format_source(source)
 

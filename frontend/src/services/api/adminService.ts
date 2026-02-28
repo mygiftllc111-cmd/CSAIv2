@@ -109,6 +109,15 @@ export const apiAdminService = {
     }
   },
 
+  async resetKnowledgeSource(sourceId: string): Promise<KnowledgeSource> {
+    try {
+      const res = await apiClient.post(`/admin/knowledge-sources/${sourceId}/reset`);
+      return res.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error));
+    }
+  },
+
   async uploadKnowledgeFile(file: File): Promise<{ doc_id: string; title: string; chunk_count: number }> {
     try {
       const form = new FormData();

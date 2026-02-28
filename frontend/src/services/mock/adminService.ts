@@ -120,6 +120,14 @@ export const mockAdminService = {
     return { ...knowledgeSources[index] };
   },
 
+  async resetKnowledgeSource(sourceId: string): Promise<KnowledgeSource> {
+    await delay(300);
+    const index = knowledgeSources.findIndex(s => s.source_id === sourceId);
+    if (index === -1) throw new Error('ナレッジソースが見つかりません');
+    knowledgeSources[index] = { ...knowledgeSources[index], status: 'active' };
+    return { ...knowledgeSources[index] };
+  },
+
   async uploadKnowledgeFile(file: File): Promise<{ doc_id: string; title: string; chunk_count: number }> {
     await delay(1500);
     return {
