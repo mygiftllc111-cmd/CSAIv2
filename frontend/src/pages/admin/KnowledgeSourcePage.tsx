@@ -74,12 +74,34 @@ export const KnowledgeSourcePage = () => {
     setSyncingIds(prev => new Set([...prev, sourceId]));
     setError(null);
     try {
-      const updated = await adminService.syncKnowledgeSource(sourceId);
-      setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
-      if (updated.status === 'error') {
-        setError(`同期に失敗しました${updated.last_error ? `：${updated.last_error}` : ''}`);
-      } else {
-        setSuccessMsg(`同期が完了しました（${updated.document_count} ドキュメント）`);
+      // Returns immediately with status='syncing'; actual work runs in background
+      const started = await adminService.syncKnowledgeSource(sourceId);
+      setSources(prev => prev.map(s => s.source_id === sourceId ? started : s));
+
+      // Poll until no longer 'syncing' (max 5 min, every 5s)
+      const MAX_POLLS = 60;
+      for (let i = 0; i < MAX_POLLS; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        try {
+          const all = await adminService.getKnowledgeSources();
+          const updated = all.find(s => s.source_id === sourceId);
+          if (updated) {
+            setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
+            if (updated.status !== 'syncing') {
+              if (updated.status === 'error') {
+                setError(`同期に失敗しました${updated.last_error ? `：${updated.last_error}` : ''}`);
+              } else {
+                setSuccessMsg(`同期が完了しました（${updated.document_count} ドキュメント）`);
+              }
+              break;
+            }
+          }
+        } catch {
+          // polling error — keep retrying
+        }
+        if (i === MAX_POLLS - 1) {
+          setError('同期がタイムアウトしました。しばらく後に画面を更新してご確認ください。');
+        }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '同期に失敗しました');

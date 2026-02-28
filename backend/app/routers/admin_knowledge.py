@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
@@ -16,7 +16,8 @@ from app.schemas.admin import (
 from app.services.knowledge_service import (
     get_knowledge_sources,
     update_knowledge_source,
-    trigger_sync,
+    mark_sync_started,
+    run_sync_background,
     upload_document,
     reset_sync_status,
 )
@@ -78,16 +79,18 @@ async def update_source(
 @router.post("/admin/sync", response_model=KnowledgeSourceResponse)
 async def sync_knowledge(
     body: SyncRequest,
+    background_tasks: BackgroundTasks,
     session: AdminSession = Depends(get_admin_session),
     db: AsyncSession = Depends(get_db),
 ):
-    """手動再同期（同期実行）"""
-    source = await trigger_sync(db=db, source_id=body.source_id)
+    """手動再同期（バックグラウンド実行）—即座にsyncing状態を返し、バックグラウンドで処理"""
+    source = await mark_sync_started(db=db, source_id=body.source_id)
     if not source:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="ナレッジソースが見つかりません",
         )
+    background_tasks.add_task(run_sync_background, body.source_id)
     return _format_source(source)
 
 

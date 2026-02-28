@@ -83,12 +83,133 @@ async def update_knowledge_source(
     return source
 
 
+async def mark_sync_started(
+    db: AsyncSession,
+    source_id: str,
+) -> Optional[KnowledgeSource]:
+    """Mark a knowledge source as syncing and return immediately (for background task pattern)."""
+    result = await db.execute(
+        select(KnowledgeSource).where(KnowledgeSource.source_id == source_id)
+    )
+    source = result.scalars().first()
+    if not source:
+        return None
+
+    if source.status == "syncing":
+        logger.warning(f"Force-resetting stuck 'syncing' status for source {source_id}")
+        source.status = "active"
+        await db.commit()
+
+    source.status = "syncing"
+    await db.commit()
+    await db.refresh(source)
+    return source
+
+
+async def run_sync_background(source_id: str) -> None:
+    """
+    Run sync in background with its own DB session.
+    Call this via FastAPI BackgroundTasks after mark_sync_started().
+    """
+    from app.database import async_session_factory
+
+    async with async_session_factory() as db:
+        result = await db.execute(
+            select(KnowledgeSource).where(KnowledgeSource.source_id == source_id)
+        )
+        source = result.scalars().first()
+        if not source:
+            logger.error(f"run_sync_background: source {source_id} not found")
+            return
+
+        try:
+            fetched_docs = await _fetch_documents(source)
+
+            if not fetched_docs:
+                logger.info(f"No documents fetched for source {source.type} ({source_id})")
+                source.status = "active"
+                source.last_synced_at = datetime.now(timezone.utc)
+                await db.commit()
+                return
+
+            await vector_service.delete_chunks_by_source(db, source_id)
+
+            doc_count = 0
+            for doc_data in fetched_docs:
+                try:
+                    doc_id = await _upsert_document(db, source_id, doc_data)
+                    chunks = chunk_document(
+                        content=doc_data["content"],
+                        chunk_size=512,
+                        chunk_overlap=50,
+                        title=doc_data.get("title", ""),
+                    )
+                    if chunks:
+                        await vector_service.store_chunks(
+                            db=db,
+                            chunks=chunks,
+                            doc_id=doc_id,
+                            source_id=source_id,
+                            document_title=doc_data.get("title", ""),
+                            source_type=source.type,
+                            source_url=doc_data.get("url"),
+                        )
+                    doc_count += 1
+
+                    try:
+                        crawled_pages = await url_crawler.crawl_urls_from_text(doc_data["content"])
+                        for crawled in crawled_pages:
+                            crawled_doc_id = await _upsert_document(db, source_id, {
+                                "title": "[リンク] " + crawled["title"],
+                                "content": crawled["content"],
+                                "url": crawled["url"],
+                                "external_id": "crawled-" + crawled["url"][:100],
+                            })
+                            crawled_chunks = chunk_document(
+                                content=crawled["content"],
+                                chunk_size=512,
+                                chunk_overlap=50,
+                                title=crawled["title"],
+                            )
+                            if crawled_chunks:
+                                await vector_service.store_chunks(
+                                    db=db,
+                                    chunks=crawled_chunks,
+                                    doc_id=crawled_doc_id,
+                                    source_id=source_id,
+                                    document_title=crawled["title"],
+                                    source_type=source.type,
+                                    source_url=crawled["url"],
+                                )
+                            doc_count += 1
+                    except Exception as e:
+                        logger.warning(f"URL crawling failed for '{doc_data.get('title', '?')}': {e}")
+
+                except Exception as e:
+                    logger.error(f"Error processing document '{doc_data.get('title', '?')}': {e}")
+                    continue
+
+            source.status = "active"
+            source.last_synced_at = datetime.now(timezone.utc)
+            source.document_count = doc_count
+            await db.commit()
+            logger.info(f"Background sync complete for {source_id}: {doc_count} documents")
+
+        except Exception as e:
+            logger.error(f"Background sync failed for source {source_id}: {e}")
+            source.status = "error"
+            config = dict(source.connection_config or {})
+            config["_last_error"] = str(e)
+            source.connection_config = config
+            await db.commit()
+
+
 async def trigger_sync(
     db: AsyncSession,
     source_id: str,
 ) -> Optional[KnowledgeSource]:
     """
-    Trigger manual sync for a knowledge source.
+    Trigger manual sync for a knowledge source (synchronous, legacy).
     Fetches documents from Notion or Google Drive, chunks them,
     generates embeddings, and stores in the database.
     """
