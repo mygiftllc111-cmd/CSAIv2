@@ -219,10 +219,6 @@ def _list_files(service, target_folder: Optional[str] = None) -> List[dict]:
         except Exception as e:
             logger.error(f"Failed to list files: {e}")
 
-            page_token = results.get("nextPageToken")
-            if not page_token:
-                break
-
     logger.info(f"Found {len(all_files)} files across {len(visited)} folders")
     return all_files
 
