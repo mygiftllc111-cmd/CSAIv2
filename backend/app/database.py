@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 from app.config import settings
 
 
@@ -24,14 +25,17 @@ def _get_database_url() -> str:
 
 _db_url = _get_database_url()
 
+_is_pg = _db_url.startswith("postgresql")
+
 engine = create_async_engine(
     _db_url,
     echo=False,
-    **({} if _db_url.startswith("sqlite") else {
-        "pool_size": 10,
-        "max_overflow": 20,
-        "pool_pre_ping": True,
-        "connect_args": {"statement_cache_size": 0},
+    **({} if not _is_pg else {
+        "poolclass": NullPool,
+        "connect_args": {
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+        },
     }),
 )
 
@@ -44,7 +48,7 @@ async_session_factory = async_sessionmaker(
 
 def is_postgres() -> bool:
     """Check if using PostgreSQL (vs SQLite)."""
-    return _db_url.startswith("postgresql")
+    return _is_pg
 
 
 async def get_db() -> AsyncSession:
