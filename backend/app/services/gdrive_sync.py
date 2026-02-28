@@ -24,6 +24,16 @@ DOWNLOADABLE_MIME_TYPES = {
     "text/html",
 }
 
+# Microsoft Office MIME types (require binary parsing)
+OFFICE_MIME_TYPES = {
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",   # .docx
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",         # .xlsx
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation", # .pptx
+    "application/msword",        # .doc (best-effort)
+    "application/vnd.ms-excel",  # .xls (best-effort)
+    "application/vnd.ms-powerpoint",  # .ppt (best-effort)
+}
+
 
 async def fetch_gdrive_documents(
     service_account_json: str,
@@ -107,7 +117,7 @@ async def _build_drive_service(service_account_json: str):
 
 def _list_files(service, target_folder: Optional[str] = None) -> List[dict]:
     """List accessible files from Google Drive, recursing into subfolders."""
-    supported = list(EXPORTABLE_MIME_TYPES.keys()) + list(DOWNLOADABLE_MIME_TYPES)
+    supported = list(EXPORTABLE_MIME_TYPES.keys()) + list(DOWNLOADABLE_MIME_TYPES) + list(OFFICE_MIME_TYPES)
     mime_conditions = " or ".join(f"mimeType = '{m}'" for m in supported)
     FOLDER_MIME = "application/vnd.google-apps.folder"
 
@@ -216,7 +226,7 @@ def _download_file_content(service, file_info: dict) -> Optional[str]:
             logger.error(f"Export failed for {file_info['name']}: {e}")
             return None
 
-    # Regular files: download
+    # Regular text files: download
     if mime_type in DOWNLOADABLE_MIME_TYPES:
         try:
             content = service.files().get_media(fileId=file_id).execute()
@@ -225,6 +235,63 @@ def _download_file_content(service, file_info: dict) -> Optional[str]:
             return str(content)
         except Exception as e:
             logger.error(f"Download failed for {file_info['name']}: {e}")
+            return None
+
+    # Microsoft Office files: download binary and parse
+    if mime_type in OFFICE_MIME_TYPES:
+        try:
+            raw = service.files().get_media(fileId=file_id).execute()
+            return _extract_office_text(file_info["name"], raw)
+        except Exception as e:
+            logger.error(f"Office download failed for {file_info['name']}: {e}")
+            return None
+
+    return None
+
+
+def _extract_office_text(filename: str, raw: bytes) -> Optional[str]:
+    """Extract plain text from Office binary formats."""
+    import io
+    name_lower = filename.lower()
+
+    if name_lower.endswith(".docx"):
+        try:
+            from docx import Document as DocxDocument
+            doc = DocxDocument(io.BytesIO(raw))
+            return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        except Exception as e:
+            logger.warning(f"docx parse failed for {filename}: {e}")
+            return None
+
+    if name_lower.endswith(".xlsx") or name_lower.endswith(".xls"):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
+            lines = []
+            for sheet in wb.worksheets:
+                lines.append(f"[シート: {sheet.title}]")
+                for row in sheet.iter_rows(values_only=True):
+                    row_text = "\t".join(str(c) if c is not None else "" for c in row)
+                    if row_text.strip():
+                        lines.append(row_text)
+            return "\n".join(lines) or None
+        except Exception as e:
+            logger.warning(f"xlsx parse failed for {filename}: {e}")
+            return None
+
+    if name_lower.endswith(".pptx") or name_lower.endswith(".ppt"):
+        try:
+            from pptx import Presentation
+            prs = Presentation(io.BytesIO(raw))
+            lines = []
+            for i, slide in enumerate(prs.slides, 1):
+                lines.append(f"[スライド {i}]")
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text.strip():
+                        lines.append(shape.text)
+            return "\n".join(lines) or None
+        except Exception as e:
+            logger.warning(f"pptx parse failed for {filename}: {e}")
             return None
 
     return None
