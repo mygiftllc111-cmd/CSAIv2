@@ -1,29 +1,4 @@
 import { useState, useEffect } from 'react';
-  // 編集用state: source_id→target_folder
-  const [folderEdits, setFolderEdits] = useState<Record<string, string>>({});
-  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
-  // 対象フォルダ編集ハンドラ
-  const handleTargetFolderEdit = (sourceId: string, value: string) => {
-    setFolderEdits(prev => ({ ...prev, [sourceId]: value }));
-  };
-
-  // 保存処理
-  const handleSaveTargetFolder = async (sourceId: string) => {
-    setSavingIds(prev => new Set([...prev, sourceId]));
-    setError(null);
-    try {
-      const source = sources.find(s => s.source_id === sourceId);
-      if (!source) return;
-      const newConfig = { ...source.connection_config, target_folder: folderEdits[sourceId] };
-      const updated = await adminService.updateKnowledgeSource(sourceId, { connection_config: newConfig });
-      setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
-      setSuccessMsg('対象フォルダを更新しました');
-    } catch {
-      setError('対象フォルダの更新に失敗しました');
-    } finally {
-      setSavingIds(prev => { const next = new Set(prev); next.delete(sourceId); return next; });
-    }
-  };
 import {
   Box,
   Typography,
@@ -68,6 +43,8 @@ export const KnowledgeSourcePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const [folderEdits, setFolderEdits] = useState<Record<string, string>>({});
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void loadSources();
@@ -110,6 +87,31 @@ export const KnowledgeSourcePage = () => {
       setSuccessMsg('同期間隔を更新しました');
     } catch {
       setError('設定の更新に失敗しました');
+    }
+  };
+
+  const handleTargetFolderEdit = (sourceId: string, value: string) => {
+    setFolderEdits(prev => ({ ...prev, [sourceId]: value }));
+  };
+
+  const handleSaveTargetFolder = async (sourceId: string) => {
+    setSavingIds(prev => new Set([...prev, sourceId]));
+    setError(null);
+    try {
+      const source = sources.find((s) => s.source_id === sourceId);
+      if (!source) return;
+      const newConfig = { ...source.connection_config, target_folder: folderEdits[sourceId] };
+      const updated = await adminService.updateKnowledgeSource(sourceId, { connection_config: newConfig });
+      setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
+      setSuccessMsg('対象フォルダを更新しました');
+    } catch {
+      setError('対象フォルダの更新に失敗しました');
+    } finally {
+      setSavingIds(prev => {
+        const next = new Set(prev);
+        next.delete(sourceId);
+        return next;
+      });
     }
   };
 
@@ -190,7 +192,7 @@ export const KnowledgeSourcePage = () => {
                        key}
                     </Typography>
                     {key === 'target_folder' && source.type === 'google_drive' ? (
-                      <>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <TextField
                           size="small"
                           value={folderEdits[source.source_id] ?? value}
@@ -200,13 +202,12 @@ export const KnowledgeSourcePage = () => {
                         <Button
                           variant="contained"
                           size="small"
-                          sx={{ ml: 1 }}
                           disabled={savingIds.has(source.source_id) || (folderEdits[source.source_id] ?? value) === value}
-                          onClick={() => handleSaveTargetFolder(source.source_id)}
+                          onClick={() => { void handleSaveTargetFolder(source.source_id); }}
                         >
                           {savingIds.has(source.source_id) ? '保存中...' : '保存'}
                         </Button>
-                      </>
+                      </Box>
                     ) : (
                       <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                         {value}
