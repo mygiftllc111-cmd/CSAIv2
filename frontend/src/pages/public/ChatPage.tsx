@@ -65,7 +65,7 @@ const ProfileForm = () => {
             inputProps={{ maxLength: 50 }}
           />
           <TextField
-            label="所属部署"
+            label="チャプター名"
             required
             fullWidth
             value={form.department}
@@ -74,7 +74,7 @@ const ProfileForm = () => {
             inputProps={{ maxLength: 100 }}
           />
           <TextField
-            label="入社時期"
+            label="入会時期"
             type="month"
             required
             fullWidth

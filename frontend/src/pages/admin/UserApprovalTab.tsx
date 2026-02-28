@@ -95,8 +95,8 @@ export const UserApprovalTab = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>名前</TableCell>
-                    <TableCell>所属</TableCell>
-                    <TableCell>入社時期</TableCell>
+                    <TableCell>チャプター</TableCell>
+                    <TableCell>入会時期</TableCell>
                     <TableCell>申請日時</TableCell>
                     <TableCell align="right">操作</TableCell>
                   </TableRow>
@@ -150,8 +150,8 @@ export const UserApprovalTab = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>名前</TableCell>
-                  <TableCell>所属</TableCell>
-                  <TableCell>入社時期</TableCell>
+                  <TableCell>チャプター</TableCell>
+                  <TableCell>入会時期</TableCell>
                   <TableCell>ステータス</TableCell>
                   <TableCell>最終アクセス</TableCell>
                 </TableRow>

@@ -187,7 +187,7 @@ export const LogAnalysisPage = () => {
             </TextField>
             <TextField
               select
-              label="入社時期"
+              label="入会時期"
               size="small"
               value={filter.join_date ?? ''}
               onChange={(e) => handleFilterChange('join_date', e.target.value)}
@@ -244,7 +244,7 @@ export const LogAnalysisPage = () => {
                     <TableCell>日時</TableCell>
                     <TableCell>利用者名</TableCell>
                     <TableCell>所属</TableCell>
-                    <TableCell>入社時期</TableCell>
+                    <TableCell>入会時期</TableCell>
                     <TableCell>質問概要</TableCell>
                     <TableCell align="right">メッセージ数</TableCell>
                   </TableRow>
