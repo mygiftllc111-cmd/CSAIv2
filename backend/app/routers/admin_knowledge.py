@@ -21,14 +21,17 @@ router = APIRouter()
 
 
 def _format_source(source) -> KnowledgeSourceResponse:
+    config = dict(source.connection_config or {})
+    last_error = config.pop("_last_error", None)
     return KnowledgeSourceResponse(
         source_id=source.source_id,
         type=source.type,
-        connection_config=source.connection_config or {},
+        connection_config=config,
         sync_interval_minutes=source.sync_interval_minutes,
         last_synced_at=source.last_synced_at.isoformat() if source.last_synced_at else None,
         document_count=source.document_count,
         status=source.status,
+        last_error=last_error,
     )
 
 

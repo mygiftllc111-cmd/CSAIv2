@@ -105,6 +105,7 @@ export interface KnowledgeSource {
   last_synced_at: string | null;
   document_count: number;
   status: KnowledgeSourceStatus;
+  last_error?: string | null;
 }
 
 // --- ログ分析関連 ---

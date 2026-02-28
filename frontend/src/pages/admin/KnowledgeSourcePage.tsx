@@ -72,7 +72,11 @@ export const KnowledgeSourcePage = () => {
     try {
       const updated = await adminService.syncKnowledgeSource(sourceId);
       setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
-      setSuccessMsg('同期が完了しました');
+      if (updated.status === 'error') {
+        setError(`同期に失敗しました${updated.last_error ? `：${updated.last_error}` : ''}`);
+      } else {
+        setSuccessMsg('同期が完了しました');
+      }
     } catch {
       setError('同期に失敗しました');
     } finally {
@@ -241,6 +245,16 @@ export const KnowledgeSourcePage = () => {
               </Box>
 
               <Divider sx={{ mb: 2 }} />
+
+              {/* Error detail */}
+              {source.status === 'error' && source.last_error && (
+                <Alert severity="error" sx={{ mb: 2 }} icon={false}>
+                  <Typography variant="caption" fontWeight={600}>同期エラー詳細</Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', mt: 0.5 }}>
+                    {source.last_error}
+                  </Typography>
+                </Alert>
+              )}
 
               {/* Connection info */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>

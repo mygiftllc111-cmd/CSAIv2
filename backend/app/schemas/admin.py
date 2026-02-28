@@ -61,6 +61,7 @@ class KnowledgeSourceResponse(BaseModel):
     last_synced_at: Optional[str] = None
     document_count: int
     status: str
+    last_error: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

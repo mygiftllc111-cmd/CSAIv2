@@ -194,6 +194,10 @@ async def trigger_sync(
     except Exception as e:
         logger.error(f"Sync failed for source {source_id}: {e}")
         source.status = "error"
+        # Store error message for frontend diagnostics
+        config = dict(source.connection_config or {})
+        config["_last_error"] = str(e)
+        source.connection_config = config
         await db.commit()
         await db.refresh(source)
 
