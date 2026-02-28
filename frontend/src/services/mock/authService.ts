@@ -6,8 +6,26 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // LocalStorage keys
 const USER_TOKEN_KEY = 'csai_user_token';
 const ADMIN_SESSION_KEY = 'csai_admin_session';
+const MOCK_USERS_KEY = 'csai_mock_users';
 
-let mockUsers = [...MOCK_USERS];
+// Persist mock users in LocalStorage so data is shared across tabs
+function loadUsers(): UserProfile[] {
+  const stored = localStorage.getItem(MOCK_USERS_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored) as UserProfile[];
+    } catch {
+      // fall through to default
+    }
+  }
+  const initial = [...MOCK_USERS];
+  localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(initial));
+  return initial;
+}
+
+function saveUsers(users: UserProfile[]): void {
+  localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+}
 
 export const mockAuthService = {
   async submitProfile(data: ProfileSubmission): Promise<UserProfile> {
@@ -25,7 +43,9 @@ export const mockAuthService = {
       last_accessed_at: new Date().toISOString(),
     };
 
-    mockUsers.push(newUser);
+    const users = loadUsers();
+    users.push(newUser);
+    saveUsers(users);
     localStorage.setItem(USER_TOKEN_KEY, newUser.profile_id);
     return newUser;
   },
@@ -36,7 +56,8 @@ export const mockAuthService = {
     const token = localStorage.getItem(USER_TOKEN_KEY);
     if (!token) return null;
 
-    const user = mockUsers.find(u => u.profile_id === token || u.auth_token === token);
+    const users = loadUsers();
+    const user = users.find(u => u.profile_id === token || u.auth_token === token);
     return user ?? null;
   },
 
@@ -75,31 +96,35 @@ export const mockAuthService = {
   // 管理者用: ユーザー一覧
   async getPendingUsers(): Promise<UserProfile[]> {
     await delay(300);
-    return mockUsers.filter(u => u.status === 'pending');
+    return loadUsers().filter(u => u.status === 'pending');
   },
 
   async getAllUsers(): Promise<UserProfile[]> {
     await delay(300);
-    return [...mockUsers];
+    return [...loadUsers()];
   },
 
   async approveUser(profileId: string): Promise<UserProfile> {
     await delay(500);
-    const user = mockUsers.find(u => u.profile_id === profileId);
+    const users = loadUsers();
+    const user = users.find(u => u.profile_id === profileId);
     if (!user) throw new Error('ユーザーが見つかりません');
 
     user.status = 'approved';
     user.approved_at = new Date().toISOString();
     user.auth_token = `token-${Date.now()}`;
+    saveUsers(users);
     return { ...user };
   },
 
   async rejectUser(profileId: string): Promise<UserProfile> {
     await delay(500);
-    const user = mockUsers.find(u => u.profile_id === profileId);
+    const users = loadUsers();
+    const user = users.find(u => u.profile_id === profileId);
     if (!user) throw new Error('ユーザーが見つかりません');
 
     user.status = 'rejected';
+    saveUsers(users);
     return { ...user };
   },
 };

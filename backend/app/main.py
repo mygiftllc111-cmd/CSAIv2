@@ -13,7 +13,7 @@ from app.database import engine, Base
 from app.routers import auth, chat, admin_users, admin_logs, admin_prompt, admin_knowledge
 
 # Import all models so they are registered with Base.metadata
-from app.models import user, conversation, admin, prompt, knowledge  # noqa: F401
+from app.models import user, conversation, admin, prompt, knowledge, document_chunk  # noqa: F401
 
 
 @asynccontextmanager
@@ -24,11 +24,13 @@ async def lifespan(app: FastAPI):
     yield
 
 
+is_prod = settings.ENVIRONMENT == "production"
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
     lifespan=lifespan,
 )
 
@@ -63,7 +65,7 @@ app.include_router(admin_knowledge.router, prefix="/api", tags=["admin-knowledge
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Unhandled exception: {exc}\n{traceback.format_exc()}")
-    return JSONResponse(status_code=500, content={"detail": str(exc)})
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.get("/")

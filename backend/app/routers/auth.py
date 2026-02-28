@@ -15,6 +15,7 @@ from app.services.auth_service import (
     admin_login,
     admin_logout,
 )
+from app.config import settings
 from app.dependencies import get_admin_session
 from app.models.admin import AdminSession
 
@@ -80,6 +81,7 @@ async def login_admin(
         key="csai_admin_session",
         value=session.session_id,
         httponly=True,
+        secure=settings.ENVIRONMENT == "production",
         samesite="lax",
         max_age=86400,  # 24 hours
     )
