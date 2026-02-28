@@ -31,6 +31,7 @@ engine = create_async_engine(
         "pool_size": 10,
         "max_overflow": 20,
         "pool_pre_ping": True,
+        "connect_args": {"statement_cache_size": 0},
     }),
 )
 
@@ -39,6 +40,11 @@ async_session_factory = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+
+def is_postgres() -> bool:
+    """Check if using PostgreSQL (vs SQLite)."""
+    return _db_url.startswith("postgresql")
 
 
 async def get_db() -> AsyncSession:
