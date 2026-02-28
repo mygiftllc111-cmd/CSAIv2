@@ -106,56 +106,93 @@ async def _build_drive_service(service_account_json: str):
 
 
 def _list_files(service, target_folder: Optional[str] = None) -> List[dict]:
-    """List accessible files from Google Drive."""
-    query_parts = ["trashed = false"]
-
-    # Filter by folder if specified
-    if target_folder:
-        # If it looks like a folder ID
-        if len(target_folder) > 20 and " " not in target_folder:
-            query_parts.append(f"'{target_folder}' in parents")
-        else:
-            # Search by folder name first
-            folder_results = service.files().list(
-                q=f"name = '{target_folder}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
-                fields="files(id)",
-                pageSize=1,
-            ).execute()
-            folders = folder_results.get("files", [])
-            if folders:
-                query_parts.append(f"'{folders[0]['id']}' in parents")
-
-    # Only include supported mime types
+    """List accessible files from Google Drive, recursing into subfolders."""
     supported = list(EXPORTABLE_MIME_TYPES.keys()) + list(DOWNLOADABLE_MIME_TYPES)
     mime_conditions = " or ".join(f"mimeType = '{m}'" for m in supported)
-    query_parts.append(f"({mime_conditions})")
+    FOLDER_MIME = "application/vnd.google-apps.folder"
 
-    query = " and ".join(query_parts)
+    # Resolve starting folder IDs
+    root_folder_ids: List[str] = []
+    if target_folder:
+        if len(target_folder) > 20 and " " not in target_folder:
+            # Looks like a folder ID directly
+            root_folder_ids = [target_folder]
+        else:
+            folder_results = service.files().list(
+                q=f"name = '{target_folder}' and mimeType = '{FOLDER_MIME}' and trashed = false",
+                fields="files(id, name)",
+                pageSize=5,
+            ).execute()
+            root_folder_ids = [f["id"] for f in folder_results.get("files", [])]
+            if not root_folder_ids:
+                logger.warning(f"Target folder '{target_folder}' not found in Google Drive")
+                return []
 
-    all_files = []
-    page_token = None
+    def _fetch_files_in_folder(folder_id: str) -> List[dict]:
+        """Fetch all supported files directly in a folder (non-recursive)."""
+        results = []
+        page_token = None
+        while True:
+            resp = service.files().list(
+                q=f"'{folder_id}' in parents and ({mime_conditions}) and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType, size, webViewLink)",
+                pageSize=100,
+                pageToken=page_token,
+            ).execute()
+            for f in resp.get("files", []):
+                size = int(f.get("size", 0))
+                if size <= MAX_FILE_SIZE:
+                    results.append(f)
+                else:
+                    logger.warning(f"Skipping large file: {f['name']} ({size} bytes)")
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+        return results
 
-    while True:
-        results = service.files().list(
-            q=query,
-            fields="nextPageToken, files(id, name, mimeType, size, webViewLink)",
+    def _fetch_subfolders(folder_id: str) -> List[str]:
+        """Return IDs of all direct subfolders."""
+        resp = service.files().list(
+            q=f"'{folder_id}' in parents and mimeType = '{FOLDER_MIME}' and trashed = false",
+            fields="files(id, name)",
             pageSize=100,
-            pageToken=page_token,
         ).execute()
+        return [f["id"] for f in resp.get("files", [])]
 
-        files = results.get("files", [])
-        # Filter by file size
-        for f in files:
-            size = int(f.get("size", 0))
-            if size <= MAX_FILE_SIZE:
-                all_files.append(f)
-            else:
-                logger.warning(f"Skipping large file: {f['name']} ({size} bytes)")
+    all_files: List[dict] = []
+    visited: set = set()
 
-        page_token = results.get("nextPageToken")
-        if not page_token:
-            break
+    if root_folder_ids:
+        # BFS over subfolders
+        queue = list(root_folder_ids)
+        while queue:
+            fid = queue.pop(0)
+            if fid in visited:
+                continue
+            visited.add(fid)
+            all_files.extend(_fetch_files_in_folder(fid))
+            queue.extend(_fetch_subfolders(fid))
+    else:
+        # No folder filter: fetch all accessible supported files
+        page_token = None
+        while True:
+            results = service.files().list(
+                q=f"({mime_conditions}) and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType, size, webViewLink)",
+                pageSize=100,
+                pageToken=page_token,
+            ).execute()
+            for f in results.get("files", []):
+                size = int(f.get("size", 0))
+                if size <= MAX_FILE_SIZE:
+                    all_files.append(f)
+                else:
+                    logger.warning(f"Skipping large file: {f['name']} ({size} bytes)")
+            page_token = results.get("nextPageToken")
+            if not page_token:
+                break
 
+    logger.info(f"Found {len(all_files)} files across {len(visited)} folders")
     return all_files
 
 
