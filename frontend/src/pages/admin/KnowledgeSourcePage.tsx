@@ -59,8 +59,8 @@ export const KnowledgeSourcePage = () => {
     try {
       const data = await adminService.getKnowledgeSources();
       setSources(data);
-    } catch {
-      setError('ナレッジソースの取得に失敗しました');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'ナレッジソースの取得に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -77,8 +77,8 @@ export const KnowledgeSourcePage = () => {
       } else {
         setSuccessMsg('同期が完了しました');
       }
-    } catch {
-      setError('同期に失敗しました');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '同期に失敗しました');
     } finally {
       setSyncingIds(prev => {
         const next = new Set(prev);
@@ -93,8 +93,8 @@ export const KnowledgeSourcePage = () => {
       const updated = await adminService.updateKnowledgeSource(sourceId, { sync_interval_minutes: interval });
       setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
       setSuccessMsg('同期間隔を更新しました');
-    } catch {
-      setError('設定の更新に失敗しました');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '設定の更新に失敗しました');
     }
   };
 
@@ -112,8 +112,8 @@ export const KnowledgeSourcePage = () => {
       const updated = await adminService.updateKnowledgeSource(sourceId, { connection_config: newConfig });
       setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
       setSuccessMsg('対象フォルダを更新しました');
-    } catch {
-      setError('対象フォルダの更新に失敗しました');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '対象フォルダの更新に失敗しました');
     } finally {
       setSavingIds(prev => {
         const next = new Set(prev);
