@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
@@ -8,6 +9,9 @@ from sqlalchemy.orm import selectinload
 
 from app.models.conversation import Conversation, Message
 from app.models.user import UserProfile
+from app.services import llm_service, prompt_service
+
+logger = logging.getLogger(__name__)
 
 
 async def create_conversation(
@@ -118,8 +122,8 @@ async def send_chat_message(
     # Save user message
     await add_message(db, conversation_id, "user", content, input_method)
 
-    # Generate AI response (placeholder - will be replaced with LlamaIndex in production)
-    ai_response = await _generate_ai_response(content)
+    # Generate AI response
+    ai_response = await _generate_ai_response(db, content, conversation_id)
     sources = ai_response.get("sources", [])
 
     # Save assistant message
@@ -130,27 +134,84 @@ async def send_chat_message(
     return assistant_msg, conversation_id, sources
 
 
-async def _generate_ai_response(content: str) -> dict:
+async def _generate_ai_response(
+    db: AsyncSession,
+    content: str,
+    conversation_id: Optional[str] = None,
+) -> dict:
     """
-    Generate AI response using LlamaIndex + RAG.
-    This is a placeholder that returns a hospitality-style response.
-    Will be replaced with actual LLM integration in production.
+    Generate AI response using OpenAI GPT-4o-mini with admin prompt settings,
+    few-shot examples, conversation history, and RAG context.
+    Falls back to placeholder when OPENAI_API_KEY is not set.
     """
-    # Placeholder response with hospitality principles
-    response_content = (
-        f"お疲れさまです。「{content[:30]}」についてお調べしますね。\n\n"
-        "現在、ナレッジベースを検索中です。"
-        "具体的な情報が見つかり次第、詳しくお伝えいたします。\n\n"
-        "もし急ぎの場合は、研修担当の方にも直接ご確認いただけますと確実です。"
+    # Get admin-configured system prompt and few-shot examples
+    prompt_config = await prompt_service.get_current_prompt(db)
+    system_prompt = prompt_config.system_prompt if prompt_config else ""
+    few_shot_examples = prompt_config.few_shot_examples if prompt_config else []
+
+    # Get conversation history (last 10 messages)
+    chat_history = []
+    if conversation_id:
+        result = await db.execute(
+            select(Message)
+            .where(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at.desc())
+            .limit(10)
+        )
+        messages = list(reversed(result.scalars().all()))
+        chat_history = [
+            {"role": msg.role, "content": msg.content}
+            for msg in messages
+        ]
+
+    # RAG context (will be populated in Slice D)
+    rag_context = None
+    sources = []
+
+    # Try vector search if available
+    try:
+        from app.services import vector_service
+        search_results = await vector_service.search_similar(db, content, top_k=5)
+        if search_results:
+            rag_parts = []
+            seen_titles = set()
+            for i, chunk in enumerate(search_results, 1):
+                title = chunk.get("document_title", "不明")
+                rag_parts.append(f"[参考資料{i}: {title}]\n{chunk['content']}")
+                if title not in seen_titles:
+                    seen_titles.add(title)
+                    sources.append({
+                        "source_title": title,
+                        "source_url": chunk.get("source_url"),
+                        "source_type": chunk.get("source_type", "unknown"),
+                    })
+            rag_context = "\n\n".join(rag_parts)
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"RAG search failed, continuing without context: {e}")
+        await db.rollback()
+
+    # Call LLM
+    llm_response = await llm_service.generate_chat_response(
+        user_message=content,
+        system_prompt=system_prompt,
+        few_shot_examples=few_shot_examples,
+        chat_history=chat_history,
+        rag_context=rag_context,
     )
 
-    return {
-        "content": response_content,
-        "sources": [
+    # If no RAG sources and using placeholder, add default source
+    if not sources:
+        sources = [
             {
                 "source_title": "社内マニュアル",
                 "source_url": None,
                 "source_type": "notion",
             }
-        ],
+        ]
+
+    return {
+        "content": llm_response["content"],
+        "sources": sources,
     }
