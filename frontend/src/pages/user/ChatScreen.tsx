@@ -73,6 +73,11 @@ const SourceTags = ({ sources }: { sources: KnowledgeReference[] }) => (
         label={src.source_title}
         size="small"
         variant="outlined"
+        component={src.source_url ? 'a' : 'div'}
+        href={src.source_url ?? undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        clickable={!!src.source_url}
         sx={{
           height: 24,
           fontSize: '0.6875rem',
@@ -80,6 +85,13 @@ const SourceTags = ({ sources }: { sources: KnowledgeReference[] }) => (
           borderColor: 'transparent',
           color: 'primary.dark',
           '& .MuiChip-icon': { color: 'primary.main' },
+          ...(src.source_url && {
+            cursor: 'pointer',
+            '&:hover': {
+              bgcolor: 'rgba(76, 175, 80, 0.18)',
+              textDecoration: 'none',
+            },
+          }),
         }}
       />
     ))}
