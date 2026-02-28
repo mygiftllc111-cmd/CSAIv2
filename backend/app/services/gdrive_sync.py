@@ -142,9 +142,13 @@ def _list_files(service, target_folder: Optional[str] = None) -> List[dict]:
                 return []
 
     def _is_size_ok(f: dict) -> bool:
-        """Google Workspace native files have no meaningful size — always allow them."""
-        if f.get("mimeType", "") in EXPORTABLE_MIME_TYPES:
+        """Google Workspace native files have no meaningful size — always allow them.
+        Office files are also allowed regardless of size since we extract text locally."""
+        mime = f.get("mimeType", "")
+        if mime in EXPORTABLE_MIME_TYPES:
             return True  # will be exported as text, actual byte size doesn't apply
+        if mime in OFFICE_MIME_TYPES:
+            return True  # text extracted locally via python-pptx/docx/openpyxl
         size = int(f.get("size", 0))
         if size > MAX_FILE_SIZE:
             logger.warning(f"Skipping large file: {f['name']} ({size} bytes)")
