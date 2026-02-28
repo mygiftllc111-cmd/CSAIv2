@@ -108,4 +108,17 @@ export const apiAdminService = {
       throw new Error(getApiErrorMessage(error));
     }
   },
+
+  async uploadKnowledgeFile(file: File): Promise<{ doc_id: string; title: string; chunk_count: number }> {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await apiClient.post('/admin/knowledge-upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error));
+    }
+  },
 };

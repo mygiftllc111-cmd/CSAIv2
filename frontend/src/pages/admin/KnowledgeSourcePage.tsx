@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import StorageIcon from '@mui/icons-material/Storage';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { adminService } from '@/services/index.ts';
 import type { KnowledgeSource, KnowledgeSourceStatus } from '@/types/index.ts';
 
@@ -45,6 +46,9 @@ export const KnowledgeSourcePage = () => {
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [folderEdits, setFolderEdits] = useState<Record<string, string>>({});
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<string | null>(null);
 
   useEffect(() => {
     void loadSources();
@@ -115,6 +119,23 @@ export const KnowledgeSourcePage = () => {
     }
   };
 
+  const handleFileUpload = async () => {
+    if (!uploadFile) return;
+    setIsUploading(true);
+    setError(null);
+    setUploadResult(null);
+    try {
+      const result = await adminService.uploadKnowledgeFile(uploadFile);
+      setUploadResult(`「${result.title}」をアップロードしました（${result.chunk_count} チャンク）`);
+      setUploadFile(null);
+      void loadSources();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'アップロードに失敗しました');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" py={4}>
@@ -136,6 +157,47 @@ export const KnowledgeSourcePage = () => {
           size="small"
         />
       </Box>
+
+      {/* ファイルアップロードセクション */}
+      <Card sx={{ mb: 3, border: '1px dashed', borderColor: 'primary.light' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <UploadFileIcon color="primary" />
+            <Typography variant="h6" fontWeight={600}>ファイルアップロード</Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            .txt / .md / .csv / .html / .json ファイルを直接ナレッジとして登録します（最大5MB）
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button variant="outlined" component="label" size="small" disabled={isUploading}>
+              ファイルを選択
+              <input
+                type="file"
+                hidden
+                accept=".txt,.md,.csv,.html,.json"
+                onChange={e => setUploadFile(e.target.files?.[0] ?? null)}
+              />
+            </Button>
+            {uploadFile && (
+              <Typography variant="body2" sx={{ flex: 1 }}>{uploadFile.name}</Typography>
+            )}
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={isUploading ? <CircularProgress size={16} /> : <UploadFileIcon />}
+              disabled={!uploadFile || isUploading}
+              onClick={() => { void handleFileUpload(); }}
+            >
+              {isUploading ? 'アップロード中...' : 'アップロード'}
+            </Button>
+          </Box>
+          {uploadResult && (
+            <Alert severity="success" sx={{ mt: 2 }} onClose={() => setUploadResult(null)}>
+              {uploadResult}
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>

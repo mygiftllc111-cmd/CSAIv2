@@ -19,7 +19,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 let currentPromptConfig = { ...MOCK_PROMPT_CONFIG };
 let promptHistory = [...MOCK_PROMPT_HISTORY];
-let knowledgeSources = [...MOCK_KNOWLEDGE_SOURCES];
+const knowledgeSources = [...MOCK_KNOWLEDGE_SOURCES];
 
 export const mockAdminService = {
   // --- ログ分析 ---
@@ -118,5 +118,14 @@ export const mockAdminService = {
       document_count: knowledgeSources[index].document_count + Math.floor(Math.random() * 3),
     };
     return { ...knowledgeSources[index] };
+  },
+
+  async uploadKnowledgeFile(file: File): Promise<{ doc_id: string; title: string; chunk_count: number }> {
+    await delay(1500);
+    return {
+      doc_id: `mock-${Date.now()}`,
+      title: file.name,
+      chunk_count: Math.floor(Math.random() * 10) + 1,
+    };
   },
 };

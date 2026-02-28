@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -14,6 +14,7 @@ from app.services.knowledge_service import (
     get_knowledge_sources,
     update_knowledge_source,
     trigger_sync,
+    upload_document,
 )
 
 router = APIRouter()
@@ -80,3 +81,34 @@ async def sync_knowledge(
             detail="ナレッジソースが見つからないか、既に同期中です",
         )
     return _format_source(source)
+
+
+ALLOWED_EXTENSIONS = {'.txt', '.md', '.csv', '.html', '.json'}
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+@router.post("/admin/knowledge-upload")
+async def upload_knowledge_file(
+    file: UploadFile = File(...),
+    session: AdminSession = Depends(get_admin_session),
+    db: AsyncSession = Depends(get_db),
+):
+    """ファイルを直接ナレッジとしてアップロード"""
+    import os
+    ext = os.path.splitext(file.filename or '')[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"対応形式: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
+    raw = await file.read()
+    if len(raw) > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ファイルサイズは5MB以下にしてください",
+        )
+
+    content = raw.decode('utf-8', errors='replace')
+    result = await upload_document(db=db, filename=file.filename or 'unknown', content=content)
+    return result
