@@ -128,6 +128,22 @@ export const mockAdminService = {
     return { ...knowledgeSources[index] };
   },
 
+  async diagnoseKnowledgeSource(_sourceId: string): Promise<Record<string, unknown>> {
+    await delay(800);
+    return {
+      service_account_email: 'mock-service@mock.iam.gserviceaccount.com',
+      target_folder: '社内マニュアル / 研修資料',
+      total_accessible_files: 3,
+      folder_found: true,
+      files_in_folder: [
+        { name: '研修資料.docx', mimeType: 'application/vnd.google-apps.document' },
+      ],
+      accessible_files_sample: [
+        { name: '研修資料.docx', mimeType: 'application/vnd.google-apps.document' },
+      ],
+    };
+  },
+
   async uploadKnowledgeFile(file: File): Promise<{ doc_id: string; title: string; chunk_count: number }> {
     await delay(1500);
     return {

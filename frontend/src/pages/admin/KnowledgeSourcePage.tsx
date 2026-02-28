@@ -11,10 +11,12 @@ import {
   TextField,
   MenuItem,
   Divider,
+  Collapse,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import StorageIcon from '@mui/icons-material/Storage';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import { adminService } from '@/services/index.ts';
 import type { KnowledgeSource, KnowledgeSourceStatus } from '@/types/index.ts';
 
@@ -49,6 +51,8 @@ export const KnowledgeSourcePage = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
+  const [diagnoseResults, setDiagnoseResults] = useState<Record<string, unknown>>({});
+  const [diagnosingIds, setDiagnosingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void loadSources();
@@ -148,6 +152,19 @@ export const KnowledgeSourcePage = () => {
       setSuccessMsg('ステータスをリセットしました。再同期を実行してください。');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'リセットに失敗しました');
+    }
+  };
+
+  const handleDiagnose = async (sourceId: string) => {
+    setDiagnosingIds(prev => new Set([...prev, sourceId]));
+    setDiagnoseResults(prev => ({ ...prev, [sourceId]: null }));
+    try {
+      const result = await adminService.diagnoseKnowledgeSource(sourceId);
+      setDiagnoseResults(prev => ({ ...prev, [sourceId]: result }));
+    } catch (e) {
+      setDiagnoseResults(prev => ({ ...prev, [sourceId]: { error: e instanceof Error ? e.message : '診断失敗' } }));
+    } finally {
+      setDiagnosingIds(prev => { const n = new Set(prev); n.delete(sourceId); return n; });
     }
   };
 
@@ -255,6 +272,18 @@ export const KnowledgeSourcePage = () => {
                       同期リセット
                     </Button>
                   )}
+                  {source.type === 'google_drive' && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="info"
+                      startIcon={diagnosingIds.has(source.source_id) ? <CircularProgress size={14} /> : <BugReportIcon />}
+                      disabled={diagnosingIds.has(source.source_id)}
+                      onClick={() => { void handleDiagnose(source.source_id); }}
+                    >
+                      接続テスト
+                    </Button>
+                  )}
                   <Button
                     variant="outlined"
                     size="small"
@@ -316,7 +345,45 @@ export const KnowledgeSourcePage = () => {
                 ))}
               </Box>
 
-              <Divider sx={{ mb: 2 }} />
+              {/* Diagnose results */}
+              <Collapse in={!!diagnoseResults[source.source_id]}>
+                {(() => {
+                  const dr = diagnoseResults[source.source_id] as Record<string, unknown> | null;
+                  if (!dr) return null;
+                  const hasError = 'error' in dr;
+                  return (
+                    <Box sx={{ mt: 2 }}>
+                      <Divider sx={{ mb: 2 }} />
+                      <Typography variant="caption" fontWeight={700} color="text.secondary">▶ 接続診断結果</Typography>
+                      <Alert severity={hasError ? 'error' : 'info'} sx={{ mt: 1 }} icon={false}>
+                        {hasError ? (
+                          <Typography variant="body2">{String(dr.error)}</Typography>
+                        ) : (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <Typography variant="body2"><b>サービスアカウント:</b> {String(dr.service_account_email ?? '不明')}</Typography>
+                            <Typography variant="body2"><b>全アクセス可能ファイル数:</b> {String(dr.total_accessible_files ?? 0)} 件</Typography>
+                            <Typography variant="body2"><b>対象フォルダ "{String(dr.target_folder)}" 検出:</b>{' '}
+                              {dr.folder_found === true ? <span style={{color:'green'}}>✅ 検出成功</span> : <span style={{color:'red'}}>❌ 見つかりません</span>}
+                            </Typography>
+                            {Array.isArray(dr.files_in_folder) && (
+                              <Typography variant="body2"><b>フォルダ内ファイル ({(dr.files_in_folder as unknown[]).length}件):</b>{' '}
+                                {(dr.files_in_folder as Array<{name:string}>).map(f => f.name).join(', ') || 'なし'}
+                              </Typography>
+                            )}
+                            {Array.isArray(dr.accessible_files_sample) && (dr.accessible_files_sample as unknown[]).length > 0 && (
+                              <Typography variant="body2"><b>サービスアカウントから見えるファイル:</b>{' '}
+                                {(dr.accessible_files_sample as Array<{name:string}>).map(f => f.name).join(', ')}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Alert>
+                    </Box>
+                  );
+                })()}
+              </Collapse>
+
+              <Divider sx={{ mb: 2, mt: diagnoseResults[source.source_id] ? 2 : 0 }} />
 
               {/* Sync info */}
               <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>

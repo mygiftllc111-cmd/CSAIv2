@@ -1,9 +1,17 @@
-"""Full integration test for all 21 endpoints."""
+"""Full integration test for all 21 endpoints.
+
+Run manually against a live server:
+    cd backend && ./venv/bin/python tests/test_all_endpoints.py
+"""
 import asyncio
+
 import httpx
+import pytest
 
 
-async def test():
+@pytest.mark.asyncio
+@pytest.mark.skipif(True, reason="Integration test - requires running server on localhost:8432")
+async def test_all_endpoints():
     async with httpx.AsyncClient(base_url="http://localhost:8432") as client:
         P, T = 0, 0
 
@@ -221,4 +229,4 @@ async def test():
 
 
 if __name__ == "__main__":
-    asyncio.run(test())
+    asyncio.run(test_all_endpoints())

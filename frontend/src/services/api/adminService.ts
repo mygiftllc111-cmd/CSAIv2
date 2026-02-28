@@ -118,6 +118,15 @@ export const apiAdminService = {
     }
   },
 
+  async diagnoseKnowledgeSource(sourceId: string): Promise<Record<string, unknown>> {
+    try {
+      const res = await apiClient.get(`/admin/knowledge-sources/${sourceId}/diagnose`);
+      return res.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error));
+    }
+  },
+
   async uploadKnowledgeFile(file: File): Promise<{ doc_id: string; title: string; chunk_count: number }> {
     try {
       const form = new FormData();
