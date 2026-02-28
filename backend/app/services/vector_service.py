@@ -145,11 +145,21 @@ async def _search_text_fallback(
     top_k: int,
 ) -> List[Dict]:
     """Text-based fallback search for SQLite or when embeddings are unavailable."""
-    # Extract keywords from query (split on spaces and particles)
-    keywords = [w for w in query.split() if len(w) >= 2]
+    import re
+    # Split on spaces, particles, and common Japanese delimiters
+    parts = re.split(r'[\s、。！？を・はがのにでとへもてや]+', query)
+    keywords = [w for w in parts if len(w) >= 2]
 
-    if not keywords:
-        keywords = [query[:10]] if len(query) >= 2 else []
+    # For Japanese: also extract 3-char sliding window substrings
+    if len(keywords) <= 1 and len(query) >= 3:
+        clean = re.sub(r'[\s、。！？を教えて]+$', '', query)
+        keywords = []
+        for i in range(0, len(clean) - 2, 3):
+            sub = clean[i:i + 4]
+            if len(sub) >= 3:
+                keywords.append(sub)
+        if not keywords:
+            keywords = [clean[:6]] if len(clean) >= 3 else []
 
     if not keywords:
         return []
