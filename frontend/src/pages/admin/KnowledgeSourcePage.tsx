@@ -11,12 +11,10 @@ import {
   TextField,
   MenuItem,
   Divider,
-  Collapse,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import StorageIcon from '@mui/icons-material/Storage';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import BugReportIcon from '@mui/icons-material/BugReport';
 import { adminService } from '@/services/index.ts';
 import type { KnowledgeSource, KnowledgeSourceStatus } from '@/types/index.ts';
 
@@ -37,7 +35,6 @@ const statusConfig: Record<KnowledgeSourceStatus, { label: string; color: 'succe
 
 const sourceTypeLabels: Record<string, string> = {
   notion: 'Notion',
-  google_drive: 'Google Drive',
 };
 
 export const KnowledgeSourcePage = () => {
@@ -46,13 +43,9 @@ export const KnowledgeSourcePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
-  const [folderEdits, setFolderEdits] = useState<Record<string, string>>({});
-  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
-  const [diagnoseResults, setDiagnoseResults] = useState<Record<string, unknown>>({});
-  const [diagnosingIds, setDiagnosingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void loadSources();
@@ -124,31 +117,6 @@ export const KnowledgeSourcePage = () => {
     }
   };
 
-  const handleTargetFolderEdit = (sourceId: string, value: string) => {
-    setFolderEdits(prev => ({ ...prev, [sourceId]: value }));
-  };
-
-  const handleSaveTargetFolder = async (sourceId: string) => {
-    setSavingIds(prev => new Set([...prev, sourceId]));
-    setError(null);
-    try {
-      const source = sources.find((s) => s.source_id === sourceId);
-      if (!source) return;
-      const newConfig = { ...source.connection_config, target_folder: folderEdits[sourceId] };
-      const updated = await adminService.updateKnowledgeSource(sourceId, { connection_config: newConfig });
-      setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
-      setSuccessMsg('対象フォルダを更新しました');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '対象フォルダの更新に失敗しました');
-    } finally {
-      setSavingIds(prev => {
-        const next = new Set(prev);
-        next.delete(sourceId);
-        return next;
-      });
-    }
-  };
-
   const handleFileUpload = async () => {
     if (!uploadFile) return;
     setIsUploading(true);
@@ -163,30 +131,6 @@ export const KnowledgeSourcePage = () => {
       setError(e instanceof Error ? e.message : 'アップロードに失敗しました');
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const handleReset = async (sourceId: string) => {
-    setError(null);
-    try {
-      const updated = await adminService.resetKnowledgeSource(sourceId);
-      setSources(prev => prev.map(s => s.source_id === sourceId ? updated : s));
-      setSuccessMsg('ステータスをリセットしました。再同期を実行してください。');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'リセットに失敗しました');
-    }
-  };
-
-  const handleDiagnose = async (sourceId: string) => {
-    setDiagnosingIds(prev => new Set([...prev, sourceId]));
-    setDiagnoseResults(prev => ({ ...prev, [sourceId]: null }));
-    try {
-      const result = await adminService.diagnoseKnowledgeSource(sourceId);
-      setDiagnoseResults(prev => ({ ...prev, [sourceId]: result }));
-    } catch (e) {
-      setDiagnoseResults(prev => ({ ...prev, [sourceId]: { error: e instanceof Error ? e.message : '診断失敗' } }));
-    } finally {
-      setDiagnosingIds(prev => { const n = new Set(prev); n.delete(sourceId); return n; });
     }
   };
 
@@ -264,7 +208,7 @@ export const KnowledgeSourcePage = () => {
         </Alert>
       )}
 
-      {sources.map((source) => {
+      {sources.filter(s => s.type !== 'google_drive').map((source) => {
         const status = statusConfig[source.status];
         const isSyncing = syncingIds.has(source.source_id);
 
@@ -284,28 +228,6 @@ export const KnowledgeSourcePage = () => {
                   />
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  {source.status === 'syncing' && !isSyncing && (
-                    <Button
-                      variant="outlined"
-                      color="warning"
-                      size="small"
-                      onClick={() => { void handleReset(source.source_id); }}
-                    >
-                      同期リセット
-                    </Button>
-                  )}
-                  {source.type === 'google_drive' && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      color="info"
-                      startIcon={diagnosingIds.has(source.source_id) ? <CircularProgress size={14} /> : <BugReportIcon />}
-                      disabled={diagnosingIds.has(source.source_id)}
-                      onClick={() => { void handleDiagnose(source.source_id); }}
-                    >
-                      接続テスト
-                    </Button>
-                  )}
                   <Button
                     variant="outlined"
                     size="small"
@@ -341,71 +263,14 @@ export const KnowledgeSourcePage = () => {
                        key === 'target_folder' ? '対象フォルダ' :
                        key}
                     </Typography>
-                    {key === 'target_folder' && source.type === 'google_drive' ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <TextField
-                          size="small"
-                          value={folderEdits[source.source_id] ?? value}
-                          onChange={e => handleTargetFolderEdit(source.source_id, e.target.value)}
-                          sx={{ minWidth: 220 }}
-                        />
-                        <Button
-                          variant="contained"
-                          size="small"
-                          disabled={savingIds.has(source.source_id) || (folderEdits[source.source_id] ?? value) === value}
-                          onClick={() => { void handleSaveTargetFolder(source.source_id); }}
-                        >
-                          {savingIds.has(source.source_id) ? '保存中...' : '保存'}
-                        </Button>
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                         {value}
                       </Typography>
-                    )}
                   </Box>
                 ))}
               </Box>
 
-              {/* Diagnose results */}
-              <Collapse in={!!diagnoseResults[source.source_id]}>
-                {(() => {
-                  const dr = diagnoseResults[source.source_id] as Record<string, unknown> | null;
-                  if (!dr) return null;
-                  const hasError = 'error' in dr;
-                  return (
-                    <Box sx={{ mt: 2 }}>
-                      <Divider sx={{ mb: 2 }} />
-                      <Typography variant="caption" fontWeight={700} color="text.secondary">▶ 接続診断結果</Typography>
-                      <Alert severity={hasError ? 'error' : 'info'} sx={{ mt: 1 }} icon={false}>
-                        {hasError ? (
-                          <Typography variant="body2">{String(dr.error)}</Typography>
-                        ) : (
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                            <Typography variant="body2"><b>サービスアカウント:</b> {String(dr.service_account_email ?? '不明')}</Typography>
-                            <Typography variant="body2"><b>全アクセス可能ファイル数:</b> {String(dr.total_accessible_files ?? 0)} 件</Typography>
-                            <Typography variant="body2"><b>対象フォルダ "{String(dr.target_folder)}" 検出:</b>{' '}
-                              {dr.folder_found === true ? <span style={{color:'green'}}>✅ 検出成功</span> : <span style={{color:'red'}}>❌ 見つかりません</span>}
-                            </Typography>
-                            {Array.isArray(dr.files_in_folder) && (
-                              <Typography variant="body2"><b>フォルダ内ファイル ({(dr.files_in_folder as unknown[]).length}件):</b>{' '}
-                                {(dr.files_in_folder as Array<{name:string}>).map(f => f.name).join(', ') || 'なし'}
-                              </Typography>
-                            )}
-                            {Array.isArray(dr.accessible_files_sample) && (dr.accessible_files_sample as unknown[]).length > 0 && (
-                              <Typography variant="body2"><b>サービスアカウントから見えるファイル:</b>{' '}
-                                {(dr.accessible_files_sample as Array<{name:string}>).map(f => f.name).join(', ')}
-                              </Typography>
-                            )}
-                          </Box>
-                        )}
-                      </Alert>
-                    </Box>
-                  );
-                })()}
-              </Collapse>
-
-              <Divider sx={{ mb: 2, mt: diagnoseResults[source.source_id] ? 2 : 0 }} />
+              <Divider sx={{ mb: 2 }} />
 
               {/* Sync info */}
               <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
