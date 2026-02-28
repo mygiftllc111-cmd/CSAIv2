@@ -18,9 +18,10 @@ from app.models import user, conversation, admin, prompt, knowledge, document_ch
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup (dev only; use migrations in production)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Create tables on startup (dev only; skip in production)
+    if settings.ENVIRONMENT != "production":
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
     yield
 
 
