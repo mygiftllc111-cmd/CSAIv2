@@ -138,18 +138,20 @@ type:
 
 ```yaml
 - Notion API Rate Limit: 3リクエスト/秒。バッチ処理にはリトライ・スリープ実装必須
-- Google Drive Export: 1ファイル10MB制限。大きいファイルは分割取得が必要
 - NO ACTION原則: AIエージェントはRead-Only。システムへの書き込み操作は一切行わない
 - 音声入力: Web Speech APIはHTTPS必須。localhost開発時は例外的に動作
 - pgvector: Supabaseで拡張有効化が必要（CREATE EXTENSION vector）
+- ナレッジソース: NotionとファイルアップロードのみサポートしてGoogle Driveは廃止済み
+- 同期はBackgroundTask化（min-instances=1でCloud Run常時起動）+フロントポーリング方式
+- Cloud Run: タイムアウト3600s、min-instances=1、リージョンasia-northeast1、プロジェクトcsai-488800
 ```
 
 ## 📝 作業ログ（最新5件）
 
 ```yaml
+- 2026-03-02 参照ソースチップのリンク化（source_urlがある場合はクリックでNotion URLを新タブで開く、ホバーエフェクトあり）
+- 2026-02-28 Google Drive廃止・Notion一本化（GDriveのDB行/document_chunks 171件/documents 80件をpsqlで削除、UI・GDrive関連コード138行削除）
+- 2026-02-28 同期BackgroundTask化+ポーリング+Cloud Run min-instances=1（502タイムアウト解消、フロント5秒ごと最大5分ポーリング）
+- 2026-02-28 ファイルアップロード機能追加（admin/knowledge-upload、.txt/.md/.csv/.html/.json、5MB制限）・エラー詳細表示・同期リセット・接続診断エンドポイント追加
 - 2026-02-27 LLM/RAG統合完了（OpenAI GPT-4o-mini直接呼び出し、管理者プロンプト・Few-shot・会話履歴接続、ドキュメントチャンク+ベクトル検索、Notion/GDrive同期実装、RAGパイプライン統合、全44テストPASS）
-- 2026-02-27 Phase 10 E2Eテスト完了（Playwright導入、全67テストPASS：P-001チャット25件、A-001ログイン6件、A-002管理画面32件、レスポンシブ4件。モックモード動作、Chromium対象）
-- 2026-02-26 Phase 9 品質チェック完了（ESLint 3件修正、ハードコード秘密鍵除去、requirements.txt重複削除、例外ハンドラ情報漏洩修正、TSビルド・ESLint 0エラー確認）
-- 2026-02-26 Phase 8 フロントエンドAPI統合完了（axios基盤、auth/chat/admin APIサービス、VITE_USE_MOCKモック切替、FrequentQuestion型統合、全14エンドポイント統合テストPASS）
-- 2026-02-15 Phase 7 バックエンド実装完了（FastAPI+SQLAlchemy、全6スライス21エンドポイント実装・テスト100%PASS、認証・チャット・管理者機能・ログ分析・プロンプト設定・ナレッジソース）
 ```

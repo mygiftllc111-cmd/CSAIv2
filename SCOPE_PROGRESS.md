@@ -19,10 +19,11 @@
 | Phase 5 | ページ実装（後半） | 完了 |
 | Phase 6 | バックエンド計画 | 完了 |
 | Phase 7 | バックエンド実装 | 完了 |
-| Phase 8 | API統合 | 未着手 |
-| Phase 9 | 品質チェック | 未着手 |
-| Phase 10 | E2Eテスト | 未着手 |
-| Phase 11 | デプロイ | 未着手 |
+| Phase 8 | API統合 | 完了 |
+| Phase 9 | 品質チェック | 完了 |
+| Phase 10 | E2Eテスト | 完了 |
+| Phase 11 | デプロイ | 完了 |
+| 追加機能 | ファイルアップロード・参照リンク化 | 完了 |
 
 ---
 
@@ -119,6 +120,8 @@
 | 3C.1 | `/api/admin/knowledge-sources` | GET | [x] |
 | 3C.2 | `/api/admin/knowledge-sources/:id` | PUT | [x] |
 | 3C.3 | `/api/admin/sync` | POST | [x] |
+| 3C.4 | `/api/admin/knowledge-upload` | POST | [x] |
+| 3C.5 | `/api/admin/knowledge-sources/:id/reset` | POST | [x] |
 
 ### 並列実装スケジュール
 
